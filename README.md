@@ -1,5 +1,7 @@
 # ProGanado · Gestión Ganadera
 
+> **MVP 2.0.1 — auditoría del 07-nov-2026:** se corrigió el solapamiento de acciones en el banner de Contabilidad, se etiquetaron los filtros para lectores de pantalla, se elevó el contraste del texto secundario, se agregaron objetivos táctiles de 24 px y foco visible, y se incorporó Playfair Display local (antes el navegador caía a Times New Roman). El login, los 8 módulos, el CRUD, el CSV y el logout siguen verificados con 0 errores de consola y 0 desbordamiento horizontal a 390/768/1440 px. La autenticación sigue siendo local y no hay token de sesión en la API: es una app de finca, no un servicio expuesto a internet.
+
 Aplicación web local para administrar un hato bovino: inventario, sanidad, reproducción, producción de leche, potreros PRV, contabilidad y usuarios.
 
 Funciona en el equipo de la finca con un servidor Python que sirve la página y guarda los datos en SQLite. No requiere conexión a internet, salvo que se configure el envío de códigos 2FA por Gmail.
