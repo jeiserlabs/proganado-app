@@ -926,18 +926,22 @@ const nombreBov = id => {
 const etiquetaBovino = b => b ? (b.name ? b.name + ' · #' + b.tag : 'Animal #' + b.tag) : 'Animal';
 const medicamento = id => db.medicamentos.find(m => m.id_medicamento === id);
 
-/* Días de retiro pendientes: >0 => leche suspendida */
-function retiroPendiente(idBov) {
-  let restante = 0;
-  for (const t of db.tratamientos.filter(t => t.id_bovino === idBov)) {
-    const med = medicamento(t.id_medicamento);
-    if (!med || !med.dias_retiro_ica) continue;
-    const fin = new Date(t.fecha_tratamiento + 'T12:00:00');
-    fin.setDate(fin.getDate() + med.dias_retiro_ica);
-    const dias = Math.ceil((fin - new Date()) / 86400000);
-    if (dias > 0) restante = Math.max(restante, dias);
-  }
-  return restante;
+/* Días de retiro pendientes: >0 => leche suspendida.
+   Delegado en reglas_retiro.js (SSOT): calendario local y fail-closed, el último
+   día de retiro sigue bloqueado. Calcularlo aquí por horas liberaba la vaca al
+   mediodía del último día. */
+function retiroPendiente(idBov, ahora) {
+  if (!globalThis.ReglasRetiro) throw new Error('reglas_retiro.js no se cargó antes de proganado.js');
+  const tratamientos = db.tratamientos
+    .filter(t => t.id_bovino === idBov)
+    .map(t => {
+      const med = medicamento(t.id_medicamento);
+      return med && med.dias_retiro_ica > 0
+        ? { fecha_tratamiento: t.fecha_tratamiento, dias_retiro_ica: med.dias_retiro_ica }
+        : null;
+    })
+    .filter(Boolean);
+  return globalThis.ReglasRetiro.calcularRetiroPendiente(tratamientos, ahora);
 }
 
 function edadTexto(birth) {
@@ -1099,9 +1103,11 @@ function renderCartilla() {
 function retiroDeTrat(t) {
   const med = medicamento(t.id_medicamento);
   if (!med || !med.dias_retiro_ica) return 0;
-  const fin = new Date(t.fecha_tratamiento + 'T12:00:00');
-  fin.setDate(fin.getDate() + med.dias_retiro_ica);
-  return Math.max(0, Math.ceil((fin - new Date()) / 86400000));
+  if (!globalThis.ReglasRetiro) throw new Error('reglas_retiro.js no se cargó antes de proganado.js');
+  return globalThis.ReglasRetiro.calcularRetiroPendiente(
+    [{ fecha_tratamiento: t.fecha_tratamiento, dias_retiro_ica: med.dias_retiro_ica }],
+    new Date()
+  );
 }
 function diasDesde(f) {
   const d = fechaValida(f);
@@ -1584,7 +1590,11 @@ $('#formEvento').addEventListener('submit', e => {
 $('#formPesaje').addEventListener('submit', e => {
   e.preventDefault();
   const f = Object.fromEntries(new FormData(e.target));
-  if (retiroPendiente(f.bovino) > 0 && !confirm('La vaca está en retiro de leche. ¿Registrar el pesaje de todos modos?')) return;
+  const retiro = retiroPendiente(f.bovino);
+  if (retiro > 0) {
+    alert('Leche bloqueada: ' + nombreBov(f.bovino) + ' está en cinta roja (' + retiro + ' día(s) de retiro ICA). No se puede registrar para acopio.');
+    return;
+  }
   db.pesajes.unshift({ id_pesaje: uid('pes'), id_bovino: f.bovino, fecha_pesaje: f.fecha, hora_pesaje: f.hora, litros_obtenidos: Number(f.litros) });
   save(); e.target.reset(); document.getElementById('modalPesaje').close(); renderAll();
 });
