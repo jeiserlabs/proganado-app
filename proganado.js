@@ -111,14 +111,39 @@ async function authLoad() {
           u.user = String(u.user || u.correo || '').toLowerCase();
           u.correo = String(u.correo || u.user).toLowerCase();
         }
+        // Migración: si el admin canónico no existe, forzar seed actualizado.
+        const _canonico = 'jeiser270997@gmail.com';
+        if (!auth.usuarios.find(u => u.user === _canonico)) {
+          const _mSalt = 'a3f8c2e1b7d4906f';
+          const _mHash = await hashPassword('A125%230a', _mSalt);
+          // Reemplazar cualquier usuario 'admin' viejo; si no existe, agregar.
+          const idxViejo = auth.usuarios.findIndex(u => u.user === 'admin' || u.user === 'admin@proganado.co');
+          const adminEntry = { user: _canonico, correo: _canonico, nombre: 'Administrador', role: 'admin', salt: _mSalt, hash: _mHash.hash, algo: _mHash.algo, iter: _mHash.iter };
+          if (idxViejo >= 0) auth.usuarios[idxViejo] = adminEntry;
+          else auth.usuarios.unshift(adminEntry);
+        }
         authSave();
         return;
       }
     }
   } catch (e) { /* datos corruptos: regenerar */ }
 
-  // Primer uso: sin cuentas. El administrador se crea desde la pantalla de acceso.
-  auth = { usuarios: [], intentos: {} };
+  // Primer uso: crear admin por defecto para demo/sustentación.
+  const _seedSalt = 'a3f8c2e1b7d4906f';
+  const _seedHash = await hashPassword('A125%230a', _seedSalt);
+  auth = {
+    usuarios: [{
+      user: 'jeiser270997@gmail.com',
+      correo: 'jeiser270997@gmail.com',
+      nombre: 'Administrador',
+      role: 'admin',
+      salt: _seedSalt,
+      hash: _seedHash.hash,
+      algo: _seedHash.algo,
+      iter: _seedHash.iter
+    }],
+    intentos: {}
+  };
   authSave();
 }
 
@@ -549,6 +574,19 @@ async function crearCuentaInicial() {
 function initAuth() {
   const formLogin = $a('#formLogin');
   if (!formLogin) return;
+
+  // Botón mostrar/ocultar contraseña
+  const btnVerPass = $a('#btnVerPass');
+  if (btnVerPass) {
+    btnVerPass.addEventListener('click', () => {
+      const inp = $a('#loginPass');
+      if (!inp) return;
+      const show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      btnVerPass.textContent = show ? '🙈' : '👁';
+      btnVerPass.title = show ? 'Ocultar contraseña' : 'Mostrar contraseña';
+    });
+  }
 
   formLogin.addEventListener('submit', async ev => {
     ev.preventDefault();
