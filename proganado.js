@@ -1,3 +1,48 @@
+/* ================================================================
+   ProGanado · proganado.js
+   Lógica completa de la aplicación — 2093 líneas
+   ================================================================
+
+   INDICE DE SECCIONES (Ctrl+F para ir directo):
+   ─────────────────────────────────────────────
+   §1  CONFIGURACION Y SEGURIDAD          → L1   (hash SHA-256, salt)
+   §2  ALMACEN DE USUARIOS                → L95  (login, seed admin)
+   §3  SESION ACTIVA                      → L174 (token, expiración)
+   §4  PERMISOS POR ROL                   → L208 (admin vs usuario)
+   §5  INTERFAZ DE LOGIN (2 pasos)        → L234 (correo + 2FA)
+   §6  ADMINISTRACION DE USUARIOS         → L396 (crear, editar, borrar)
+   §7  ARRANQUE Y WIRE-UP                 → L703 (inicialización)
+   §8  BASE DE DATOS LOCAL (localStorage) → L712 (bovinos, eventos, etc.)
+   §9  DATOS SEMILLA DE DEMO              → L748 (vacas de ejemplo)
+   §10 PERSISTENCIA                       → L885 (guardar/cargar datos)
+   §11 HELPERS DE DOMINIO                 → L956 (retiro ICA, días abiertos)
+   §12 RENDER: GANADO + CARTILLA          → L996 (tabla de animales)
+   §13 RENDER: SALUD                      → L1155 (tratamientos)
+   §14 RENDER: REPRODUCCION               → L1181 (celos, partos)
+   §15 RENDER: PRODUCCION                 → L1205 (pesajes, entregas)
+   §16 RENDER: POTREROS PRV               → L1239 (rotación de potreros)
+   §17 RENDER: INICIO                     → L1279 (agenda, donut, actividad)
+   §18 MODALES Y FORMULARIOS              → L1503 (abrir, cerrar, guardar)
+   §19 NAVEGACION                         → L1668 (cambio de página)
+   §20 EXPORTAR CSV                       → L1677 (descarga de datos)
+   §21 CONTABILIDAD                       → L1687 (entradas, salidas, fotos)
+   §22 REPORTE PDF MENSUAL                → L1866 (genera PDF en el navegador)
+   §23 ARRANQUE FINAL                     → L2082 (render inicial)
+
+   ┌─ COMO ENTENDER ESTE ARCHIVO ─────────────────────────────────┐
+   │  Toda la lógica usa localStorage (datos en el navegador).    │
+   │  No hay servidor externo: todo funciona offline.             │
+   │                                                              │
+   │  Para modificar un módulo busca su número de sección (§12   │
+   │  para ganado, §13 para salud, etc.) con Ctrl+F.             │
+   │                                                              │
+   │  Las funciones de render siguen el patrón:                  │
+   │    renderGanado()   → pinta la tabla de bovinos             │
+   │    renderSalud()    → pinta los tratamientos                │
+   │    renderRepro()    → pinta eventos reproductivos           │
+   └──────────────────────────────────────────────────────────────┘
+================================================================ */
+
 /* ============================================================
    ProGanado — Autenticación local (2FA por correo) y usuarios
    - Máximo 4 administradores y 7 usuarios (total 11 cuentas)
